@@ -1,5 +1,5 @@
 # run here
-from application import manager
+from application import manager, app_fk
 import www
 
 
