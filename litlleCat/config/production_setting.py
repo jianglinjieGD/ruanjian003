@@ -10,8 +10,9 @@ SQLALCHEMY_TRACK_MODIFICATIONS = True
 SQLALCHEMY_ECHO = True
 AUTH_COOKIE_NAME = "usr_login_cookie_name"
 DOMAIN = {
-    "www" : "http://127.0.0.1：5000"
+    "www" : "http://120.76.69.11"
 
 }
 # 直接使用80端口
 # "www" : "http://120.76.69.11"
+# "http://127.0.0.1：5000"
