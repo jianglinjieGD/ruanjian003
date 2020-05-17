@@ -14,14 +14,6 @@ from sqlalchemy import or_,and_
 
 member_blueprint_page = Blueprint("member_blueprint_page", __name__)
 
-@member_blueprint_page.route("/", methods=["GET", "POST"])
-def usr_usrPage():
-    dict = {"hello": "value in hello ", "h2" : "value 2i jjj"}
-    # return ops_renderJSON(msg="show the usr login/reg page")\
-    # return ops_render("member/login.html")
-    return ops_renderJSON(data={"dict" : JsonHelper.json_dict(dict)})
-
-
 '''
 # 函数：   usr_reg
 # 功能：   接收注册信息，进行注册或者返回错误信息
@@ -41,7 +33,7 @@ def usr_reg():
     # 接收用户的注册请求信息
     error_list = []
     if request.method == "GET":
-        error_list.append(json.dumps("请使用post"))
+        error_list.append("请使用post")
 
     if len(error_list) < 1:
         # 接收参数信息
@@ -51,18 +43,18 @@ def usr_reg():
         login_pwd2 = regValues["login_pwd2"] if "login_pwd2" in regValues else ""
         # 确定信息合法
         if login_name is None or len(login_name) < 1:
-            return error_list.append(json.dumps("请输入正确的登录名！"))
+            error_list.append("请输入正确的登录名！")
         if login_pwd is None or len(login_pwd) < 6:
-            return error_list.append(json.dumps("密码至少要6个字符哦！"))
+            error_list.append("密码至少要6个字符哦！")
         if login_pwd2 is None or len(login_pwd2) < 6:
-            return error_list.append(json.dumps("密码至少要6个字符哦！"))
+            error_list.append("密码至少要6个字符哦！")
         if login_pwd != login_pwd2:
-            return error_list.append(json.dumps("两次输入的密码不同呢！"))
+            error_list.append("两次输入的密码不同呢！")
 
         # 用户名是否已存在
         usrInfo_name = User.query.filter_by( login_name = login_name).first()
         if usrInfo_name is not None:
-            return error_list.append(json.dumps("用户名已存在！"))
+            error_list.append("用户名已存在！")
     if len(error_list) < 1:
         # 生成salt、 saltKey
         salt = UserService.genSalt()
@@ -89,6 +81,7 @@ def usr_reg():
         error_dict[str(i)] = error_list[i]
 
     if len(error_list) < 1:
+        code = 200
         msg = "success"
 
     return ops_renderJSON(code=code, msg=msg, data={"error_list" : error_list})
@@ -145,12 +138,12 @@ def usr_login():
     # 账号状态
     if error_flg == 5:
         if usrInfo.status != 1:
-            error_msg = json.dumps("账号被禁用，请联系管理员")
+            error_msg = "账号被禁用，请联系管理员"
         else:
             error_flg += 1
 
     # 成功登录
-    response = ops_renderJSON(msg=error_flg, data={"error_msg": error_msg})
+    response = ops_renderJSON(code=-1, msg=error_flg, data={"error_msg": error_msg})
     if error_flg == 6:
         error_flg = 0
         error_msg = "登录成功"
@@ -194,6 +187,7 @@ def usr_logout():
 # 传递方式 post         
 # 返回：   标准响应：code=200, msg="my comments", data={"commentList" : commentList}
 #          错误 code=-1, msg="" 未想到
+#          key: "usr_id", "time", "movie_id", "content", "head_pic", "nickname"
 # #          "commentList":{ "1": { "time":xx, "movie_id":xx, "content":text}
 #                            "2": {......}
 # #           }
@@ -205,10 +199,10 @@ def usr_myComment():
     # 从cookie读取用户信息
     usr_info = g.current_user
     usr_id = usr_info.usr_id
-
+    app_fk.logger.info("usr_id: "+ str(usr_id))
     # 根据usr_id 获取所有相关的评论
     comment_query = db_mysql.session.query(Comment.movie_id, Comment.time, Comment.content).\
-        filter(usr_id == usr_id).all()
+        filter(Comment.usr_id == usr_id).all()
     colum_names = ["movie_id", "time" , "content"]
 
     # 处理成dict
@@ -242,9 +236,6 @@ def usr_myComment():
 '''
 @member_blueprint_page.route("/deleteMyComment/<time>" , methods=["GET", "POST"])
 def usr_deleteMyComment(time):
-    # 读取请求参数 time
-    req = request.values
-
     # 通过 usr_id 和 time 删除相应的评论
     # 从cookie读取用户信息
     usr_info = g.current_user
@@ -252,12 +243,15 @@ def usr_deleteMyComment(time):
     # 操作数据库
     time = time.replace("\"", "")               # 去掉引号 如果有
 
-    comment_model = Comment.query.filter_by(usr_id=usr_id, time=time).first()
-    # 删除全部评论
-    if time == "all":
+    if time != "all":
+        comment_model = Comment.query.filter_by(usr_id=usr_id, time=time).first()
+        if comment_model is None:
+            return ops_renderErrJSON(msg="没有这条评论")
+    else:   # 删除全部评论
         comment_model = Comment.query.filter_by(usr_id=usr_id).all()
-    for h_q in comment_model:
-        db_mysql.session.delete(h_q)
+        for h_q in comment_model:
+            db_mysql.session.delete(h_q)
+
     db_mysql.session.commit()
 
     # 返回 提示信息
@@ -273,10 +267,8 @@ def usr_deleteMyComment(time):
 # 传递方式 post         
 # 返回：   标准响应：code=200, msg="success", data=movieList
 #          错误：code=-1, msg="" 未想到 
-# 如       data = { "44" : { "movie_id":44, "name":xxx, "cover_pic":xxxxx}
-#                  "45" : {......}
-# #                }
-# #        key_name = ["movie_id", "name", "cover_pic"] 相对电影列表，去掉了 评论数
+# #        key_name = ["movie_id", "name", "cover_pic","comment_count","douban_score", "classification"]
+#          和全部分类页 返回的电影列表相同
 #           
 '''
 @member_blueprint_page.route("/myLove" , methods=["GET", "POST"])
@@ -287,9 +279,10 @@ def usr_myLove():
     # id 搜索love 的movie_id ==> list
     history_query = db_mysql.session.query(History.movie_id).filter(History.usr_id==usr_id, History.love==1).all()
     # movie_id  ==> movie simple info
-    movie_query = db_mysql.session.query(Movie.movie_id, Movie.name, Movie.cover_pic).\
+    movie_query = db_mysql.session.query(Movie.movie_id, Movie.name, Movie.cover_pic, Movie.comment_count,
+                                         Movie.douban_score, Movie.classification).\
         filter(Movie.movie_id.in_(history_query)).all()
-    colum_names = ["movie_id", "name", "cover_pic"]
+    colum_names = ["movie_id", "name", "cover_pic", "comment_count", "douban_score", "classification"]
     # 利用colum_names + movie_query 形成字典
     movie_sampleInfo = JsonHelper.json_sqlAlchemy_list(movie_query, colum_names)
 
@@ -332,6 +325,7 @@ def usr_addLove(movie_id):
     return ops_renderJSON( msg="success")
 
 
+
 '''
 # 函数：   usr_deleteMyLove
 # 功能：   用户删除某条收藏
@@ -351,19 +345,23 @@ def usr_deleteMyLove(movie_id):
     # 读取请求
     req = request.values
 
-    # 电影是否存在
-    movie_exit = db_mysql.session.query(Movie.movie_id).filter(Movie.movie_id == movie_id).first()
-    if movie_exit is None:
-        return ops_renderErrJSON(msg="no such movie")
 
-    # 写入数据库 History
-    history_query = History.query.filter_by(usr_id=usr_id, movie_id=movie_id).first()
-    # if movie_id == "all" 删除所有收藏
-    if movie_id == "all":
+    if movie_id != "all":
+        # 电影是否存在
+        movie_exit = db_mysql.session.query(Movie.movie_id).filter(Movie.movie_id == movie_id).first()
+        if movie_exit is None:
+            return ops_renderErrJSON(msg="no such movie")
+        # 查数据库 History
+        history_query = History.query.filter_by(usr_id=usr_id, movie_id=movie_id).first()
+        # 是否有收藏
+        if history_query is None:
+            return ops_renderErrJSON(msg="未收藏该电影")
+    else:
+        # if movie_id == "all" 删除所有收藏
         history_query = History.query.filter_by(usr_id=usr_id).all()
+        for h_q in history_query:
+            db_mysql.session.delete(h_q)
 
-    for h_q in history_query:
-        db_mysql.session.delete(h_q)
     db_mysql.session.commit()
 
     return ops_renderJSON(msg="success")

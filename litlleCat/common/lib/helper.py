@@ -45,12 +45,12 @@ class JsonHelper:
     # 需要参数： 查询返回的列表， 每一列的列名
     @staticmethod
     def json_sqlAlchemy_list(sqlAlchemy_list, colums_name):
-        movies_json = {}
+        movies_json = []
         for item in sqlAlchemy_list:
             tmp_json = {}
             for i in range(len(colums_name)):
                 tmp_json[colums_name[i]] = item[i]          # 用列名作为key
-            movies_json[str(item[0])] = tmp_json            # 以movie_id作为key； 电源信息的dict作为value
+            movies_json.append(tmp_json)                    # 以movie_id作为key； 电源信息的dict作为value
 
         return movies_json
         # return json.dumps( movies_json, ensure_ascii=False )

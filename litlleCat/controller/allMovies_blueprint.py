@@ -4,68 +4,27 @@
 from flask import Blueprint, request, g
 from sqlalchemy import func, or_
 
-
 from common.model.movies import Movie
 from common.model.comment import Comment
 from common.model.history import History
+from common.model.users import User
 from common.lib.DataHelper import getCurrentTime
 from common.model.classificationName import Classificationname
 from application import db_mysql
-from common.lib.helper import ops_renderJSON, ops_renderErrJSON, ops_render
+from common.lib.helper import ops_renderJSON, ops_renderErrJSON
 import math, requests
 from common.lib.helper import JsonHelper
-from json import dumps
-from interceptors.Auth import check_login
+from interceptors.Auth import check_login           # ？ 必须引用它，否则 g.current_user 找不到
+
 
 # 创建一个蓝图
 allMovies_blueprint_page = Blueprint("allMovies_blueprint_page", __name__)
 aPage_size = 30             # 一个页面的电影数量
 
-# ################ 废弃 #############
 
 '''
-# 函数：   allMovies_firstPage
-# address：/
-# 功能：   为首页提供 大图轮播数据; 5部最新电影，和它们的部分详情介绍
-#          如果需要 需要轮播下方的电影列表，发起下面的请求：
-#          按pub_date 排序： /allClass?orderBy_condition=pub_date#desc"
-#                           "#" 分割符，分割排序条件和升降序
-#           
-# 参数：   无
-# 返回：   1. top5: 轮播使用的五部电影
-#          colums_name = ["movie_id", "name", "cover_pic", "classification", "comment_count", "description"]
-#         
-# 如:"top5": "{
-#           \"39\": {\"classification\": \"电影 / 科幻 / 恐怖\", \"comment_count\": 0,
-#                    ...... \"movie_id\": 39, \"name\": \"卫星2020\"}, 
-#           \"44\": {\"classification\": \"电影 / 喜剧 / 爱情 / 剧情\", \"comment_count\": 0, 
-#                       ....... }  
-#           ......
-#           }
-'''
-@allMovies_blueprint_page.route("/", methods=["GET", "POST"])
-def allMovies_firstPage():
-    # 数据库 查询实例
-    movies_query = db_mysql.session.query(Movie.movie_id.label("movie_id"), Movie.name.label("name"),
-                                          Movie.cover_pic.label("cover_pic"),
-                                          Movie.classification.label("classification"),
-                                          Movie.comment_count.label("comment_count"),
-                                          Movie.description)
-    colums_name_top5 = ["movie_id", "name", "cover_pic", "classification", "comment_count", "description"]
-    # 轮播 top 5 of pub_date
-    list_movie_top5 = movies_query.order_by(Movie.pub_date.desc())[0:5]
-    # 生成对应的json
-    list_movie_top5_json = JsonHelper.json_sqlAlchemy_list(list_movie_top5, colums_name_top5)
-    # 返回信息的 dict
-    return_dict = {"top5" : list_movie_top5_json}
-
-    return JsonHelper.json_dict(return_dict)
-
-# #############################
-
-'''
-# 函数：   allMovies_allClass
-# address：/allClass
+# 函数：    allMovies_allClass
+# address： /allClass
 # 功能：    为全部分类提供电源列列表，根据参数以筛选；
             搜索功能： 电影名、演员名、导演名 ==》 search
             全部筛选条件可以同时存在； 比如：class=爱情； actor=xx;...
@@ -85,18 +44,16 @@ def allMovies_firstPage():
                      ex： http://127.0.0.1:5000/allClass?class=爱情
 #           area：   地区，返回该地区的电影
                      另有方法提供所有 地区名 
+#           year:    年份，返回该年分上映的电影                       
+                     年份：近3--5年吧，空就是没有
 #           search:  搜索字段， 将自动检索：电影名、电影又名、主演名、导演名
                      返回同样是电影列表（可能为空）
                      search=xxx名                                         
 # 返回：   标准响应：code=200, msg="movie list and pageInfo", data={"movieList" : movieList，"pageInfo":pageInfo }
 #          参数名错了/名对值错 ==》 参数无效： orderBy_condition=21 无效 asdfasf 压根就没这个参数 无效
-#          
-#          1. movieList： 条件下的电影列表
-            "movieList":{ "44" : { "movie_id":44, "name":xxx, "cover_pic":xxxxx,"comment_count":xxx}
-                          "45" : {......}
-#                       }
-#                   key_name = ["movie_id":, "name", "cover_pic","comment_count"]
-#          3. pageInfo:{
+#          movieList = [ {}, {}, ..... ]
+#          key_name = ["movie_id", "name", "cover_pic","comment_count","douban_score", "classification"]
+#           pageInfo:{
 #               "page_cur":     请求的页面号，默认是第一页
 #               "aPage_size":   一页的大小,
 #               "total_count":  电影总数
@@ -112,15 +69,18 @@ def allMovies_allClass():
     page_request = reqInfo["page_request"] if "page_request" in reqInfo else 1  # 请求的页面号
     classification = reqInfo["class"] if "class" in reqInfo else None           # 类型要求
     area = reqInfo["area"] if "area" in reqInfo else None                       # 地区
+    year = reqInfo["year"] if "year" in reqInfo else None                       # year
     search = reqInfo["search"] if "search" in reqInfo else None                 # search
 
     # 排序条件: pub_date；view_count；comment_count; love_count; douban_score; 默认 douban_score
     orderBy_condition_req = reqInfo["orderBy_condition"] if "orderBy_condition" in reqInfo else None
     orderBy_condition = get_orderBy_condition(orderBy_condition_req)
 
-    # 根据请求，向数据库请求Movies："movie_id", "name", "cover_pic", "comment_count"
-    movies_query_list = db_mysql.session.query(Movie.movie_id, Movie.name, Movie.cover_pic, Movie.comment_count)
-    colums_name = ["movie_id", "name", "cover_pic", "comment_count"]
+    # 根据请求，向数据库请求Movies
+    # "movie_id", "name", "cover_pic","comment_count","douban_score", "class"
+    movies_query_list = db_mysql.session.query(Movie.movie_id, Movie.name, Movie.cover_pic, Movie.comment_count,
+                                               Movie.douban_score, Movie.classification)
+    colums_name = ["movie_id", "name", "cover_pic", "comment_count", "douban_score", "classification"]
 
     # 按照class（classification in db） 筛选
     if classification is not None:
@@ -130,6 +90,10 @@ def allMovies_allClass():
     if area is not None:
         movies_query_list = movies_query_list.\
             filter(Movie.area.like("%#%".replace("#", area)))
+    # 按 年份 筛选
+    if year is not None:
+        movies_query_list = movies_query_list. \
+            filter(Movie.year.like("%#%".replace("#", year)))
     # 按 搜索词 筛选
     if search is not None:
         movies_query_list = movies_query_list.\
@@ -155,11 +119,12 @@ def allMovies_allClass():
     # 页面电影的范围： 0 - 30,30 - 60 ,60 - 90
     offset = (page_request - 1) * aPage_size
     limit = page_request * aPage_size
-    movie_list = movies_query_list.order_by(Movie.pub_date.desc())[offset:limit]
+    movie_list = movies_query_list.order_by(orderBy_condition)[offset:limit]
 
     # 把 movie_list ==》 dict ==》  json化
     movie_list_json = JsonHelper.json_sqlAlchemy_list(movie_list, colums_name)
     return_dict = {"pageInfo": page, "movieList": movie_list_json}
+
     return ops_renderJSON(data=JsonHelper.json_dict(return_dict))
 
 '''
@@ -213,7 +178,7 @@ def allMovies_staticInfo(info):
 # 返回：排序主条件；默认douban_score.desc()
 def get_orderBy_condition(orderBy_condition):
     # default ：
-    orderBy_condition_first = Movie.douban_score.desc()  # 默认主条件
+    orderBy_condition_first = Movie.douban_score                       # 默认主条件
     # else
     if orderBy_condition is not None:                                   # 有设置排序条件
         orderBy_condition.strip()                                       # 去首尾空格
@@ -253,7 +218,7 @@ def get_orderBy_condition(orderBy_condition):
 #          movie_id,name, classification,actors,cover_pic,pics,description,imdb_url,vid_url
 #          pub_date,source,view_count,douban_score,love_count,comment_count,director, 
 #          other_name, area, info_url
-#          增加返回项： started 如果用户登录了： 该电影是否已经被收藏 0/1
+#          增加返回项： stared 如果用户登录了： 该电影是否已经被收藏 0/1
                                 如果没有登录: 返回没有收藏 0
 
 # 例子：   /movieInfo/44 返回
@@ -295,7 +260,7 @@ def allMovies_movieInfo(movie_id):
     movieInfo_dict["pics"] = JsonHelper.str_to_list( movieInfo_dict["pics"])
 
     # 添加： 如果已登录，是否已收藏？
-    movieInfo_dict["started"] = 0
+    movieInfo_dict["stared"] = 0
     # 从cookie读取用户信息
     usr_info = g.current_user
     if usr_info is not None:                # 已登录
@@ -303,9 +268,10 @@ def allMovies_movieInfo(movie_id):
         # 是否已经收藏
         isExit = History.query.filter_by(usr_id=usr_id, movie_id=movie_id, love=1).first()
         if isExit is not None:              # 已经收藏了
-            movieInfo_dict["started"] = 1
+            movieInfo_dict["stared"] = 1
 
     return ops_renderJSON(msg="", data=movieInfo_dict)
+
 
 
 '''
@@ -317,10 +283,7 @@ def allMovies_movieInfo(movie_id):
 # 传递方式 post/get         
 # 返回：   标准响应：code=200, msg="movie comments", data={"commentList" : commentList}
 #          错误 code=-1, msg="no such movie"
-#          "commentList":{ "1": {"usr_id":xx, "time":xx, "movie_id":xx, "content":text}
-                           "2": {......}
-#           }
-# 
+#          key: "usr_id", "time", "movie_id", "content", "head_pic", "nickname"
 '''
 @allMovies_blueprint_page.route("/getComment/<movie_id>", methods=["GET", "POST"])
 def allMovies_getComment(movie_id):
@@ -340,11 +303,17 @@ def allMovies_getComment(movie_id):
     # 处理
     comment_dict = {}
     if comment_query is not None:
-        for i in range(len(comment_query)):
+        for i in range(len(comment_query)):                     # 对每条评论
             tmp_dict = {}
-            for j in range(len(comment_query[i])):
+            for j in range(len(comment_query[i])):              # 形成评论项
                 tmp_dict[colum_names[j]] = comment_query[i][j]
+            # 拼接用户信息 "head_pic", "nickname"
+            usr_id = comment_query[i][0]
+            usr_query = User.query.filter(User.usr_id == usr_id).first()
+            tmp_dict["nickname"] = usr_query.nickname
+            tmp_dict["head_pic"] = usr_query.head_pic
             comment_dict[str(i)] = tmp_dict
+
     # 需要对datetime对象字符串化，否则 json会显示成 "Wed, 13 May 2020 23:12:26 GMT"
     for i in range(len(comment_dict)):
         comment_dict[str(i)]["time"] = str(comment_dict[str(i)]["time"])
