@@ -199,6 +199,8 @@ def get_orderBy_condition(orderBy_condition):
             orderBy_condition_first = orderBy_condition_first.desc()
         else:
             orderBy_condition_first = orderBy_condition_first.asc()
+    else:
+        orderBy_condition_first = orderBy_condition_first.desc()
 
     return orderBy_condition_first
 
