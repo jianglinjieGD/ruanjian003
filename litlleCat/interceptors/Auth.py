@@ -27,6 +27,8 @@ def before_request():
     g.current_user = None           # g是自带的，一次请求中的全局变量
     # 检查登录
     user_info = check_login()       # 检查是否登录： 登录时会保存coolie到本地
+    # app_fk.logger.info(user_info)
+
     if user_info:
         g.current_user = user_info  # 登录则把用户信息放到全局变量g
     else:
