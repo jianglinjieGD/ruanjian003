@@ -1,0 +1,29 @@
+{
+  "code": 200,
+  "data": {
+    "areaNames": [
+      "\u4e2d\u56fd\u53f0\u6e7e",
+      "\u4e2d\u56fd\u5927\u9646",
+      "\u4e2d\u56fd\u9999\u6e2f",
+      "\u4e39\u9ea6",
+      "\u4f0a\u6717",
+      "\u4fc4\u7f57\u65af",
+      "\u52a0\u62ff\u5927",
+      "\u5370\u5ea6",
+      "\u5df4\u897f",
+      "\u5fb7\u56fd",
+      "\u610f\u5927\u5229",
+      "\u65e5\u672c",
+      "\u6cd5\u56fd",
+      "\u6cf0\u56fd",
+      "\u6fb3\u5927\u5229\u4e9a",
+      "\u7231\u5c14\u5170",
+      "\u745e\u5178",
+      "\u7f8e\u56fd",
+      "\u82f1\u56fd",
+      "\u897f\u73ed\u7259",
+      "\u97e9\u56fd"
+    ]
+  },
+  "msg": "areaNames"
+}
