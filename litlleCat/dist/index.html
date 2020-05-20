@@ -1,0 +1,24 @@
+<!DOCTYPE html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no"><title>影推</title><script type=text/javascript>(function() {
+          var docEl = document.documentElement;
+  
+  
+          function setRemUnit() {
+              // 获取到rem的基准值
+              var rem = 100 * docEl.clientWidth / 375;
+  
+              // 动态设置html根元素的font-size
+              docEl.style.fontSize = rem + 'px';
+          }
+  
+          setRemUnit();
+  
+          // 窗口大小变化时 触发
+          window.addEventListener('resize', setRemUnit);
+  
+          // 窗口出现在当前屏幕时 （有浏览器兼容性）
+          window.addEventListener('pageshow', function(e) {
+              if (e.persisted) {
+                  setRemUnit();
+              }
+          });
+      })();</script><link href=./static/css/app.941324df2de5d1808ed1599bfbd2fa50.css rel=stylesheet></head><body><div id=app></div><script type=text/javascript src=./static/js/manifest.3ad1d5771e9b13dbdad2.js></script><script type=text/javascript src=./static/js/vendor.aa032bf35dbb4dadecc7.js></script><script type=text/javascript src=./static/js/app.d519994cbd4d6d32a805.js></script></body></html>

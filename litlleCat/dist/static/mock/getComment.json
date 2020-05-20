@@ -1,0 +1,15 @@
+{
+  "code": 200,
+  "data": {
+    "commentList": {
+      "0": {
+        "content": "好电影！",
+        "movie_id": 245,
+        "time": "2020-05-16 17:14:29",
+        "usr_id": 1,
+        "avatar": "static/avatar.jpeg"
+      }
+    }
+  },
+  "msg": "success"
+}

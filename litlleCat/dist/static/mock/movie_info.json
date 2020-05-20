@@ -1,0 +1,29 @@
+{
+  "code": 200,
+  "data": {
+    "actors": "\u67e5\u7406\u5179\u00b7\u585e\u9686 / \u59ae\u53ef\u00b7\u57fa\u5fb7\u66fc / \u739b\u683c\u7279\u00b7\u7f57\u6bd4 / \u7ea6\u7ff0\u00b7\u5229\u601d\u6208 / \u827e\u8389\u68ee\u00b7\u73cd\u59ae ",
+    "area": "\u7f8e\u56fd / \u52a0\u62ff\u5927",
+    "classification": "\u5267\u60c5 / \u4f20\u8bb0",
+    "comment_count": 0,
+    "cover_pic": "https://img1.doubanio.com/view/photo/s_ratio_poster/public/p2571554907.jpg ",
+    "description": "\u7ea6\u7ff0\u00b7\u5229\u7279\u9ad8(\u300a\u738b\u51a0\u300b)\u9970\u6f14",
+    "director": "\u6770\u4f0a\u00b7\u7f57\u5947",
+    "douban_score": 7,
+    "imdb_url": "https://www.imdb.com/title/tt6394270",
+    "info_url": "https://movie.douban.com/subject/30289194/? tag=\u70ed\u95e8&from=gaia_video",
+    "love_count": 27217,
+    "movie_id": 199,
+    "name": "\u7206\u70b8\u65b0\u95fb",
+    "other_name": "\u7206\u70b8\u6027\u4e11\u95fb(\u6e2f) / \u91cd\u78c5\u8165\u95fb(\u53f0) / \u6027\u611f\u70b8\u5f39 / \u91cd\u78c5\u70b8\u5f39 / \u516c\u6b63\u4e0e\u5e73\u8861 / Fair and Balanced",
+    "pics": [
+      "https://img3.doubanio.com/view/photo/sqxs/public/p2566484772.jpg",
+      "https://img3.doubanio.com/view/photo/sqxs/public/p2571554973.jpg"
+    ],
+    "pub_date": "Sat, 16 May 2020 16:47:00 GMT",
+    "source": "douban",
+    "started": 0,
+    "vid_url": "",
+    "view_count": 0
+  },
+  "msg": ""
+}

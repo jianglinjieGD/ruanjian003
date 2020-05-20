@@ -1,0 +1,11 @@
+{  
+  "code": 200,   
+  "data": {    
+    "movieList": {      
+      "1": {        
+        "comment_count": 0,         
+        "cover_pic": "https://img3.doubanio.com/view/photo/s_ratio_poster/public/p2572847101.jpg ",         
+        "movie_id": 1,         
+        "name": "\u51b0\u96ea\u5947\u7f182"      
+        },       
+      "2": {        "comment_count": 0,         "cover_pic": "https://img1.doubanio.com/view/photo/s_ratio_poster/public/p2570099577.jpg ",         "movie_id": 2,         "name": "\u6731\u8fea"      },       "3": {        "comment_count": 0,         "cover_pic": "https://img1.doubanio.com/view/photo/s_ratio_poster/public/p2586800409.jpg ",         "movie_id": 3,         "name": "\u673a\u667a\u533b\u751f\u751f\u6d3b"      }    },     "pageInfo": {      "aPage_size": 30,       "is_next": 0,       "is_prev": 0,       "page_cur": 1,       "total_count": 3,       "total_pages": 1    }  },   "msg": "\u64cd\u4f5c\u6210\u529f~~" }
