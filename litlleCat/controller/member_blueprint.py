@@ -240,18 +240,32 @@ def usr_deleteMyComment(time):
     # 从cookie读取用户信息
     usr_info = g.current_user
     usr_id = usr_info.usr_id
+    movie_id = ""
     # 操作数据库
     time = time.replace("\"", "")               # 去掉引号 如果有
+
 
     if time != "all":
         comment_model = Comment.query.filter_by(usr_id=usr_id, time=time).first()
         if comment_model is None:
             return ops_renderErrJSON(msg="没有这条评论")
+        # 删除单条评论
+        db_mysql.session.delete(comment_model)
+        db_mysql.session.commit()
+        movie_id = comment_model.movie_id
     else:   # 删除全部评论
         comment_model = Comment.query.filter_by(usr_id=usr_id).all()
+        movie_id = comment_model[0].movie_id
+        # 操作数据库
         for h_q in comment_model:
             db_mysql.session.delete(h_q)
+            db_mysql.session.commit()
 
+    # 修改评论数量
+    comment_count_now = Comment.query.filter(Comment.movie_id == movie_id).count()      # 评论数量
+    movie_model = Movie.query.filter(Movie.movie_id == movie_id).first()
+    movie_model.comment_count = comment_count_now
+    db_mysql.session.add(movie_model)
     db_mysql.session.commit()
 
     # 返回 提示信息
@@ -322,6 +336,13 @@ def usr_addLove(movie_id):
     db_mysql.session.add(history_query)
     db_mysql.session.commit()
 
+    # 修改收藏数量
+    love_count_now = History.query.filter(History.movie_id == movie_id).count()  # 收藏 数量
+    movie_model = Movie.query.filter(Movie.movie_id == movie_id).first()
+    movie_model.love_count = love_count_now
+    db_mysql.session.add(movie_model)
+    db_mysql.session.commit()
+
     return ops_renderJSON( msg="success")
 
 
@@ -345,7 +366,6 @@ def usr_deleteMyLove(movie_id):
     # 读取请求
     req = request.values
 
-
     if movie_id != "all":
         # 电影是否存在
         movie_exit = db_mysql.session.query(Movie.movie_id).filter(Movie.movie_id == movie_id).first()
@@ -356,12 +376,22 @@ def usr_deleteMyLove(movie_id):
         # 是否有收藏
         if history_query is None:
             return ops_renderErrJSON(msg="未收藏该电影")
+        # 删除单条收藏
+        db_mysql.session.delete(history_query)
+        db_mysql.session.commit()
     else:
         # if movie_id == "all" 删除所有收藏
         history_query = History.query.filter_by(usr_id=usr_id).all()
+        # 操作数据库 删除多条收藏
         for h_q in history_query:
             db_mysql.session.delete(h_q)
+            db_mysql.session.commit()
 
+    # 修改收藏数量
+    love_count_now = History.query.filter(History.movie_id == movie_id).count()  # 收藏 数量
+    movie_model = Movie.query.filter(Movie.movie_id == movie_id).first()
+    movie_model.love_count = love_count_now
+    db_mysql.session.add(movie_model)
     db_mysql.session.commit()
 
     return ops_renderJSON(msg="success")

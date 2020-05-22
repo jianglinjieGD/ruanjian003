@@ -178,7 +178,7 @@ def allMovies_staticInfo(info):
 # 返回：排序主条件；默认douban_score.desc()
 def get_orderBy_condition(orderBy_condition):
     # default ：
-    orderBy_condition_first = Movie.douban_score                       # 默认主条件
+    orderBy_condition_first = Movie.douban_score                        # 默认主条件
     # else
     if orderBy_condition is not None:                                   # 有设置排序条件
         orderBy_condition.strip()                                       # 去首尾空格
@@ -199,6 +199,8 @@ def get_orderBy_condition(orderBy_condition):
             orderBy_condition_first = orderBy_condition_first.desc()
         else:
             orderBy_condition_first = orderBy_condition_first.asc()
+    else:
+        orderBy_condition_first = orderBy_condition_first.desc()
 
     return orderBy_condition_first
 
@@ -372,6 +374,11 @@ def allMovies_postUpComment():
     db_mysql.session.add(model_comment)
     db_mysql.session.commit()
 
+    # 修改评论数量
+    movie_model = Movie.query.filter(Movie.movie_id == movie_id).first()
+    movie_model.comment_count += 1
+    db_mysql.session.add(movie_model)
+    db_mysql.session.commit()
     return ops_renderJSON(msg="success")
 
 
@@ -434,7 +441,6 @@ def allMovies_carousel():
     return ops_renderJSON(msg="success", data=carousel_dict)
 
 
-
 '''
 函数：     
 功能：  更新carousel表，找到movies 中对应的 movie_id
@@ -450,8 +456,7 @@ def allMovies_carouselUpdate():
         movies_id = db_mysql.session.query(Movie.movie_id).\
             filter(or_(Movie.name.like("%#%".replace("#", iterm[0])),
                        Movie.other_name.like("%#%".replace("#", iterm[0])) )).first()
-        print("#########################")
-        print(movies_id)
+
         # 找到了则更新 carousel
         if movies_id is not None:
             carousel_update = Carousel.query.filter(Carousel.name == iterm[0]).first()
