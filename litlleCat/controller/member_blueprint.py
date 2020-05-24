@@ -93,8 +93,8 @@ def usr_reg():
 # 地址：   usr/login
 # 参数：   login_name login_pwd 
 # 传递方式 post         
-# 返回：   标准响应：code=200, msg="success", data={}
-#          错误：code=-1, msg=error_msg, data={}   
+# 返回：   标准响应：code=200, msg="success", data={"nickname":nickname, "head_pic" : head_pic}
+#          错误：code=-1, msg=error_msg, data={"error_msg": error_msg}   
 #          error_msg
 #          0:登录成功 1: 请使用post; 2:请输入正确的登录名; 3:请输入正确的密码; 4:账号和密码不匹配
 #          5:账号被禁用，请联系管理员;
@@ -128,12 +128,16 @@ def usr_login():
         else:
             error_flg += 1
     # 验证密码和账户
+    nickname = ""
+    head_pic = ""
     if error_flg == 4:
         usrInfo = User.query.filter_by(login_name=login_name).first()
         # 用户名不存在 或 不匹配密码
         if not usrInfo or usrInfo.login_pwd != UserService.genePwd(login_pwd, usrInfo.login_salt):
             error_msg = "账号和密码不匹配"
         else:
+            nickname = usrInfo.nickname
+            head_pic = usrInfo.head_pic
             error_flg += 1
     # 账号状态
     if error_flg == 5:
@@ -142,12 +146,12 @@ def usr_login():
         else:
             error_flg += 1
 
-    # 成功登录
     response = ops_renderJSON(code=-1, msg=error_flg, data={"error_msg": error_msg})
+    # 成功登录
     if error_flg == 6:
         error_flg = 0
         error_msg = "登录成功"
-        response = ops_renderJSON(msg=error_flg, data={"error_msg": error_msg})
+        response = ops_renderJSON(msg=error_flg, data={"nickname" : nickname, "head_pic" : head_pic})
         response.set_cookie(app_fk.config['AUTH_COOKIE_NAME'],
                             "%s#%s" % (UserService.geneAuthCode(usrInfo), usrInfo.usr_id), 60 * 60 * 24 * 120)
     # cookie(name = app_fk.config['AUTH_COOKIE_NAME'],
