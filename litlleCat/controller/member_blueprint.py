@@ -183,43 +183,114 @@ def usr_logout():
 # 函数：   usr_myComment
 # 功能：   用户查看已评论
 # 地址：   usr/myComment
-# 参数：   无
+# 参数：   movie_id 可选，只返回该电影的我的评论； 否则返回全部我的评论
 # 传递方式 post         
 # 返回：   标准响应：code=200, msg="my comments", data={"commentList" : commentList}
 #          错误 code=-1, msg="" 未想到
-#          key: "usr_id", "time", "movie_id", "content", "head_pic", "nickname"
-# #          "commentList":{ "1": { "time":xx, "movie_id":xx, "content":text}
+#           
+#          key:  "movie_id","time", "content", "movieName", "cover_pic", 
+#          list， 有序： 时间降序
+# #          "commentList":[ "1": { "time":xx, "movie_id":xx, "content":text}
 #                            "2": {......}
-# #           }
-#          相比电影的评论列表， 省略了 urs_id 
-#          未登录除外，未登录是统一处理的
+# #           ]
+
 '''
 @member_blueprint_page.route("/myComment" , methods=["GET", "POST"])
 def usr_myComment():
     # 从cookie读取用户信息
     usr_info = g.current_user
     usr_id = usr_info.usr_id
-    app_fk.logger.info("usr_id: "+ str(usr_id))
+
+    # 请求参数
+    req = request.values
+    movie_id = req["movie_id"] if "movie_id" in req else None
+
     # 根据usr_id 获取所有相关的评论
     comment_query = db_mysql.session.query(Comment.movie_id, Comment.time, Comment.content).\
-        filter(Comment.usr_id == usr_id).all()
+        filter(Comment.usr_id == usr_id)
+    # 是否指定电影？
+    if movie_id is not None:
+        comment_query = comment_query.filter(Comment.movie_id == movie_id)
+    # 启动查询 排序
+    comment_query = comment_query.order_by(Comment.time.desc()).all()
     colum_names = ["movie_id", "time" , "content"]
 
     # 处理成dict
-    comment_dict = {}
+    comment_dict = []
     for i in range(len(comment_query)):
         tmp_dict = {}
+        # comment colums
         for j in range(len(comment_query[i])):
             tmp_dict[colum_names[j]] = comment_query[i][j]
-        comment_dict[str(i)] = tmp_dict
+        # 添加movie_name 和 cover_pic
+        movie_id = comment_query[i][0]
+        movie_model = Movie.query.filter(Movie.movie_id == movie_id).first()
+        tmp_dict["movieName"] = movie_model.name
+        tmp_dict["cover_pic"] = movie_model.cover_pic
+        comment_dict.append(tmp_dict)
 
     # 需要对datetime对象字符串化，否则 json会显示成 "Wed, 13 May 2020 23:12:26 GMT"
     # 这和数据库的显示不匹配，造成不必要的麻烦
     for i in range(len(comment_dict)):
-        comment_dict[str(i)]["time"] = str(comment_dict[str(i)]["time"])
-        print(comment_dict[str(i)]["time"])
+        comment_dict[i]["time"] = str(comment_dict[i]["time"])
+        # print(comment_dict[i]["time"])
 
     return ops_renderJSON(msg="my comments", data={"commentList" : comment_dict})
+
+'''
+# 函数：   usr_myCommentMovie
+# 功能：   用户已评论的电影列表, 只有电影列表，没有评论信息
+# 地址：   usr/myCommentMovie
+# 参数：   
+# 传递方式 post         
+# 返回：   标准响应：code=200, msg="success", data={"movieList" : movieList}
+#          错误 code=-1, msg="" 未想到
+#         
+#          key_name = ["movie_id", "name", "cover_pic","douban_score", "classification", "stared"]
+#          list， 有序： 时间降序
+# #          "movieList":[ {}, {} ]
+'''
+@member_blueprint_page.route("/myCommentMovie" , methods=["GET", "POST"])
+def usr_myCommentMovie():
+    # 从cookie读取用户信息
+    usr_info = g.current_user
+    usr_id = usr_info.usr_id
+
+    # 获取评论过的电影列表
+    movie_list_comment = Comment.query.filter(Comment.usr_id == usr_id).order_by(Comment.time.desc()).all()
+    # 按序建立 电影部分信息
+    movie_list_return = []
+    movieList = []
+    for item in movie_list_comment:
+        tmp_dict = {}
+        tmp_dict["movie_id"] = item.movie_id
+        tmp_dict["time"] = item.time
+        movie_list_return.append(tmp_dict)
+
+        movieList.append(item.movie_id)
+
+    # 根据请求，向数据库请求Movies
+    # "movie_id", "name", "cover_pic","comment_count","douban_score", "class"
+    movies_query_list = db_mysql.session.query(Movie.movie_id, Movie.name, Movie.cover_pic,
+                                                   Movie.douban_score, Movie.classification).\
+            filter(Movie.movie_id.in_(movieList)).all()
+    colums_name = ["movie_id", "name", "cover_pic", "douban_score", "classification"]
+
+    # 为了下面方便使用
+    movies_query_dict = {}
+    for iterm in movies_query_list:
+        movies_query_dict[iterm[0]] = iterm
+
+    # 生成数据
+    for iterm in movie_list_return:
+        for col in range(1, len(colums_name)):
+            iterm[colums_name[col]] = movies_query_dict[iterm["movie_id"]][col]
+
+    # 是否已收藏？
+
+    return ops_renderJSON(msg="success", data={"movieList" : movie_list_return})
+
+
 
 '''
 # 函数：   usr_deleteMyComment
@@ -394,5 +465,82 @@ def usr_deleteMyLove(movie_id):
     db_mysql.session.add(movie_model)
     db_mysql.session.commit()
 
+    return ops_renderJSON(msg="success")
+
+
+'''
+# 函数：   usr_setHeadPic
+# 功能：   用户设置/修改头像
+# 地址：   usr/setHeadPic
+# 参数：   参数 picUrl
+# 示例：   usr/setHeadPic?picUrl=xxx   
+# 传递方式 post/get         
+# 返回：   标准响应：code=200, msg="success", data={}
+#          错误：code=-1, msg="缺少picUrl" / "url 不能为空" /"url 过长",  data={}   
+
+'''
+@member_blueprint_page.route("/setHeadPic" , methods=["GET", "POST"])
+def usr_setHeadPic():
+    # 从cookie读取用户信息
+    usr_info = g.current_user
+    usr_id = usr_info.usr_id
+
+    # 读参数 picUrl
+    req = request.values
+    picUrl = ""
+    if "picUrl"  in req:
+        picUrl = req["picUrl"]
+    else:
+        return ops_renderErrJSON(msg="缺少picUrl")
+
+    # 检查上传的链接是否为空？
+    if picUrl == "":
+        return ops_renderErrJSON(msg="url 不能为空")
+    if len(picUrl) > 290:
+        return ops_renderErrJSON(msg="url 过长")
+    # 存入数据库
+    usr_model = User.query.filter(User.usr_id == usr_id).first()
+    usr_model.head_pic = picUrl
+    db_mysql.session.add(usr_model)
+    db_mysql.session.commit()
+
+    # 返回信息
+    return ops_renderJSON(msg="success")
+
+
+'''
+# 函数：   usr_setNickname
+# 功能：   用户设置/修改昵称
+# 地址：   usr/setNickname
+# 参数：   参数 nickname
+# 示例：   usr/setNickname?nickname=我的昵称
+# 传递方式 post/get         
+# 返回：   标准响应：code=200, msg="success", data={}
+#          错误：code=-1, msg="缺少 nickname"/ "昵称 不能为空" /"昵称 过长",  data={}   
+
+'''
+@member_blueprint_page.route("/setNickname" , methods=["GET", "POST"])
+def usr_setNickName():
+    # 从cookie读取用户信息
+    usr_info = g.current_user
+    usr_id = usr_info.usr_id
+    nickname = ""
+    req = request.values
+    if "nickname" in req:
+        nickname = req["nickname"]
+    else:
+        return ops_renderErrJSON(msg="缺少 nickname")
+
+    if nickname == "":
+        return ops_renderErrJSON(msg="昵称不能为空")
+    if len(nickname) > 29:
+        return ops_renderErrJSON(msg="昵称 过长")
+    # 存入数据库
+    usr_model = User.query.filter(User.usr_id == usr_id).first()
+    usr_model.nickname = nickname
+    db_mysql.session.add(usr_model)
+    db_mysql.session.commit()
+
+    # 返回信息
     return ops_renderJSON(msg="success")
 
