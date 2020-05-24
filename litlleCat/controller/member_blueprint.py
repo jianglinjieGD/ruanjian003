@@ -265,13 +265,15 @@ def usr_myCommentMovie():
     # 按序建立 电影部分信息
     movie_list_return = []
     movieList = []
+
     for item in movie_list_comment:
         tmp_dict = {}
-        tmp_dict["movie_id"] = item.movie_id
-        tmp_dict["time"] = item.time
-        movie_list_return.append(tmp_dict)
+        if item.movie_id not in movieList:
+            tmp_dict["movie_id"] = item.movie_id
+            tmp_dict["time"] = item.time
+            movie_list_return.append(tmp_dict)
 
-        movieList.append(item.movie_id)
+            movieList.append(item.movie_id)
 
     # 根据请求，向数据库请求Movies
     # "movie_id", "name", "cover_pic","comment_count","douban_score", "class"
