@@ -6,9 +6,9 @@ from controller.allMovies_blueprint import allMovies_blueprint_page
 
 
 # 注册蓝图1，前缀名是 page1
-app_fk.register_blueprint(bluePrint_1_page, url_prefix="/page1")
-app_fk.register_blueprint(member_blueprint_page, url_prefix="/usr")
-app_fk.register_blueprint(allMovies_blueprint_page, url_prefix="/")
+# app_fk.register_blueprint(bluePrint_1_page, url_prefix="/page1")
+app_fk.register_blueprint(member_blueprint_page, url_prefix="/api/usr")
+app_fk.register_blueprint(allMovies_blueprint_page, url_prefix="/api/")
 
 
 

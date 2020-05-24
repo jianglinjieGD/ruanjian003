@@ -1,5 +1,4 @@
 # run here
-
 # You must import the app_fk or uwsgi cans't not find the app_fk
 from application import manager, app_fk
 import www

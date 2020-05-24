@@ -1,4 +1,3 @@
-#coding=utf-8
 # 全局变量模块
 
 from flask import Flask
