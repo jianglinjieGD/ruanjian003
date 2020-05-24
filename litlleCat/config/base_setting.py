@@ -1,10 +1,11 @@
 # 这里是基本配置（都需要的配置）
 
-# DEBUG = True
 
 # DEBUG = True
 DEBUG = False
+
 # SQLALCHEMY_TRACK_MODIFICATIONS = False
+
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 # SQLALCHEMY_ECHO = False
 SQLALCHEMY_ECHO = True
@@ -26,4 +27,5 @@ DOMAIN = {
 # 直接使用80端口
 # "www" : "http://120.76.69.11"
 # "http://127.0.0.1：5000"
+
 
