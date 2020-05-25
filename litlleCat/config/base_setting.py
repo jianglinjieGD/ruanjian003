@@ -1,11 +1,8 @@
 # 这里是基本配置（都需要的配置）
 
-
 # DEBUG = True
 DEBUG = False
-
 # SQLALCHEMY_TRACK_MODIFICATIONS = False
-
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 # SQLALCHEMY_ECHO = False
 SQLALCHEMY_ECHO = True
@@ -16,9 +13,9 @@ SQLALCHEMY_DATABASE_URI = "mysql://wang:Wang_003@120.76.59.11/ruanjian003"
 
 LOGIN_REQUIREMENT_LIST = ["postUpComment", "postUpComment", "myComment", "deleteMyComment",
                           "myLove", "deleteMyLove", "addLove", "setHeadPic", "setNickname",
-                          "myCommentMovie"]
+                          "myCommentMovie", "usrInfo", "postUpHeadPic"]
 
-
+USER_HEAD_PIC_FILE_PATH = "userFile/headPic/"
 AUTH_COOKIE_NAME = "usr_login_cookie_name"
 DOMAIN = {
     "www" : "http://120.76.69.11"
