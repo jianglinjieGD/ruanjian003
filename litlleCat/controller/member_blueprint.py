@@ -9,7 +9,7 @@ from common.lib.UrlManager import UrlManager
 from common.model.comment import Comment
 from common.model.history import History
 from common.model.movies import Movie
-
+import os
 from sqlalchemy import or_,and_
 
 member_blueprint_page = Blueprint("member_blueprint_page", __name__)
@@ -349,6 +349,79 @@ def usr_deleteMyComment(time):
     return ops_renderJSON(msg="success")
 
 
+'''
+# 函数：   usr_usrInfo
+# 功能：   返回用户的信息（昵称和头像url）
+# 地址：   usr/usrInfo
+# 参数：   无
+# 传递方式 post         
+# 返回：   标准响应：code=200, msg="success", data={}
+#          错误：code=-1, msg="" 未想到 
+# #        {"head_pic" : head_pic, "nickname" : nickname}
+'''
+@member_blueprint_page.route("/usrInfo" , methods=["GET", "POST"])
+def usr_usrInfo():
+    # 从cookie读取用户信息
+    usr_info = g.current_user
+    usr_id = usr_info.usr_id
+
+    # 查询数据库
+    usr_model = User.query.filter(User.usr_id == usr_id).first()
+
+    # 返回数据
+    head_pic = usr_model.head_pic
+    nickname = usr_model.nickname
+
+    return ops_renderJSON(msg="success", data={"head_pic" : head_pic, "nickname" : nickname})
+
+
+
+'''
+# 函数：   usr_postUpHeadPic
+# 功能：   上传头像文件（图片）
+# 地址：   usr/postUpHeadPic
+# 参数：   post传递： 格式是form-data: key=fileName(类型file) , value：选择的文件
+           通过get传递 type, 指明文件后缀名 如"jpg"，（不用点）没有指明返回提示
+        
+# 传递方式 post         
+# 返回：   标准响应：code=200, msg="success", data={"head_pic" : head_pic}
+#          错误：code=-1, msg="请指明文件 后缀" 
+# #     
+'''
+@member_blueprint_page.route("/postUpHeadPic" , methods=["GET", "POST"])
+def usr_myInfo():
+    # 从cookie读取用户信息
+    usr_info = g.current_user
+    usr_id = usr_info.usr_id
+
+    # 读取请求信息
+    req = request.files
+    filePic = req["filePic"] if "filePic" in req else None
+    req_get = request.values
+    file_type = req_get["type"] if "type" in req_get else None
+
+    if filePic is not None:
+        print(filePic)
+    else:
+        return ops_renderErrJSON(msg="文件为空")
+
+    # head_pic  请修改成绝对路径！！！！
+    path = app_fk.config["USER_HEAD_PIC_FILE_PATH"]
+    # fileName_postUp = filePic.name
+    # end_with = fileName_postUp[end_with_index:]
+
+    head_pic = path + "usrPic_" + str(usr_id)
+    if file_type is not None:
+        head_pic += "." + file_type
+    else:
+        return ops_renderErrJSON(msg="请指明文件 后缀")
+
+    filePic.save(head_pic)
+    filePic.close()
+
+    return ops_renderJSON(msg="success", data={"head_pic" : head_pic})
+
+
 
 '''
 # 函数：   usr_myLove
@@ -378,6 +451,9 @@ def usr_myLove():
     movie_sampleInfo = JsonHelper.json_sqlAlchemy_list(movie_query, colum_names)
 
     return ops_renderJSON(msg="success", data=movie_sampleInfo)
+
+
+
 
 
 '''

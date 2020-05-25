@@ -67,6 +67,7 @@ def allMovies_allClass():
     # 请求信息
     reqInfo = request.values
     page_request = reqInfo["page_request"] if "page_request" in reqInfo else 1  # 请求的页面号
+    page_request = int(page_request)
     classification = reqInfo["class"] if "class" in reqInfo else None           # 类型要求
     area = reqInfo["area"] if "area" in reqInfo else None                       # 地区
     year = reqInfo["year"] if "year" in reqInfo else None                       # year
@@ -125,7 +126,7 @@ def allMovies_allClass():
     movie_list_json = JsonHelper.json_sqlAlchemy_list(movie_list, colums_name)
     return_dict = {"pageInfo": page, "movieList": movie_list_json}
 
-    return ops_renderJSON(data=JsonHelper.json_dict(return_dict))
+    return ops_renderJSON(data=return_dict)
 
 '''
 # 函数：   allMovies_staticInfo
