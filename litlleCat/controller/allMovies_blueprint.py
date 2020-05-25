@@ -120,7 +120,8 @@ def allMovies_allClass():
     # 页面电影的范围： 0 - 30,30 - 60 ,60 - 90
     offset = (page_request - 1) * aPage_size
     limit = page_request * aPage_size
-    movie_list = movies_query_list.order_by(orderBy_condition)[offset:limit]
+    # 注意 需要第二排序条件， 否则顺序会变动
+    movie_list = movies_query_list.order_by(orderBy_condition, Movie.movie_id.asc())[offset:limit]
 
     # 把 movie_list ==》 dict ==》  json化
     movie_list_json = JsonHelper.json_sqlAlchemy_list(movie_list, colums_name)
