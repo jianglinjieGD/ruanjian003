@@ -102,11 +102,10 @@ def allMovies_allClass():
     # 按 搜索词 筛选
     # 关键词优化： 优先搜索 电影名字、主演、导演
     # ####### 先去除 非意义字符
-    search = validWord_serach(search)
-    if len(search) < 1:
-        return ops_renderErrJSON(msg="搜索词不合法")
-
     if search is not None:
+        search = validWord_serach(search)
+        if len(search) < 1:
+            return ops_renderErrJSON(msg="搜索词不合法")
         movies_query_list_tmp = movies_query_list
         # 按电影名字
         movies_query_list = movies_query_list.\
