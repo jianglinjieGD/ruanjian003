@@ -50,8 +50,10 @@ aPage_size = 30             # 一个页面的电影数量
                      返回同样是电影列表（可能为空）
                      search=xxx名                                         
 # 返回：   标准响应：code=200, msg="movie list and pageInfo", data={"movieList" : movieList，"pageInfo":pageInfo }
-#          参数名错了/名对值错 ==》 参数无效： orderBy_condition=21 无效 asdfasf 压根就没这个参数 无效
-#          movieList = [ {}, {}, ..... ]
+#          参数名错了/名对值错 ==》 参数无效：
+#          错误：code = -1, msg = "搜索词不合法", data={}         
+mo
+vieList = [ {}, {}, ..... ]
 #          key_name = ["movie_id", "name", "cover_pic","comment_count","douban_score", "classification"]
 #           pageInfo:{
 #               "page_cur":     请求的页面号，默认是第一页
@@ -95,13 +97,37 @@ def allMovies_allClass():
     if year is not None:
         movies_query_list = movies_query_list. \
             filter(Movie.year.like("%#%".replace("#", year)))
+
+
     # 按 搜索词 筛选
+    # 关键词优化： 优先搜索 电影名字、主演、导演
+    # ####### 先去除 非意义字符
+    search = validWord_serach(search)
+    if len(search) < 1:
+        return ops_renderErrJSON(msg="搜索词不合法")
+
     if search is not None:
+        movies_query_list_tmp = movies_query_list
+        # 按电影名字
         movies_query_list = movies_query_list.\
-            filter( or_(Movie.name.like("%#%".replace("#", search)),
-                        Movie.other_name.like("%#%".replace("#", search)),
-                        Movie.actors.like("%#%".replace("#", search)),
-                        Movie.director.like("%#%".replace("#", search)) ) )
+            filter( Movie.name.like("%#%".replace("#", search))).all()
+
+        # 如果没有结果,按 主演名字
+        if len(movies_query_list) < 1:
+            movies_query_list = movies_query_list_tmp
+            movies_query_list = movies_query_list. \
+                filter(Movie.actors.like("%#%".replace("#", search))).all()
+        # 如果没有结果,按导演名字
+        if len(movies_query_list) < 1:
+            movies_query_list = movies_query_list_tmp
+            movies_query_list = movies_query_list. \
+                filter(Movie.director.like("%#%".replace("#", search))).all()
+
+        # 直接返回 不和其他情况一起？  多出口不好，还挺复杂1!!
+        movies_query_list_return = JsonHelper.json_sqlAlchemy_list(movies_query_list, colums_name)
+        return ops_renderJSON(data={"movieList" : movies_query_list_return})
+
+
     # 页面信息 ！！ 页面信息必须是在所有的筛之后！
     total_size = movies_query_list.count()  # 电影总数量
     total_pages = math.ceil(total_size / aPage_size)  # 总页数， 向上取整
@@ -128,6 +154,19 @@ def allMovies_allClass():
     return_dict = {"pageInfo": page, "movieList": movie_list_json}
 
     return ops_renderJSON(data=return_dict)
+
+# 搜索词 合法化
+# 无法合法化 ==》 len = 0
+def validWord_serach(strIn):
+    invalid_set = {"%", "-", "+", "*", "&", "#", "$", "_"}
+    strNew = ""
+    for ch in strIn:
+        if ch not in invalid_set:
+            strNew += ch
+
+    return strNew
+
+
 
 '''
 # 函数：   allMovies_staticInfo
@@ -334,7 +373,7 @@ def allMovies_getComment(movie_id):
 # 地址：   /postUpComment
 # 参数：   movie_id, commentContent=评论内容  
 # 传递方式 post         
-# 返回：   标准响应：code=200, msg="success", data={}
+# 返回：   标准响应：code=200, msg="success", data={"comment" : commentContent}
 #          错误：code=-1, msg=error_msg, data={}
 # #             error_msg
 # #             { 0 = ok, 1:未登录, 2:评论超过长度300, 3:缺少参数movie_id, 4:缺少评论内容
@@ -367,6 +406,12 @@ def allMovies_postUpComment():
     if movie_exit is None:
         return ops_renderErrJSON(msg="no such movie")
 
+    # 处理评论内容
+    if len(commentContent) > 300:
+        return ops_renderErrJSON(msg="评论长度超过300")
+
+    # 长达 连续20个（数字或字母）
+    commentContent = invalidWord(commentContent)
     # 读取usr_id, 产生 time
     usr_info = g.current_user
     usr_id = usr_info.usr_id
@@ -381,7 +426,32 @@ def allMovies_postUpComment():
     movie_model.comment_count += 1
     db_mysql.session.add(movie_model)
     db_mysql.session.commit()
-    return ops_renderJSON(msg="success")
+    return ops_renderJSON(msg="success", data={"comment" : commentContent})
+
+# 函数：
+# 功能：   过长的不可能单词加 "- "
+## 如果一个字符串 长达连续20个（数字或字母）认为是无效的单词 此时进行截断 + "- "
+def invalidWord(strIn):
+    length = 0
+    strNew = ""
+
+    set_alpha = {"a", "b", "c", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q",
+                 "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I",
+                 "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "1",
+                 "2", "3", "4", "5", "6", "7", "8", "9", "0" }
+
+    for ch in strIn:
+        if ch in set_alpha:
+            length += 1
+        else:
+            length = 0
+
+        if length >= 20:
+            strNew += "- "
+            length = 0
+        strNew += ch
+
+    return strNew
 
 
 '''
